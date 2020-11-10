@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Хост: 127.0.0.1:3306
--- Время создания: Ноя 10 2020 г., 16:23
+-- Время создания: Ноя 10 2020 г., 18:15
 -- Версия сервера: 5.7.32
 -- Версия PHP: 7.4.9
 
@@ -36,16 +36,6 @@ CREATE TABLE IF NOT EXISTS `a_category` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8;
 
---
--- Дамп данных таблицы `a_category`
---
-
-INSERT INTO `a_category` (`id`, `code`, `name`, `parent_id`) VALUES
-(1, 1, 'Электротовары', 0),
-(2, 2, 'Кухонная посуда', 0),
-(3, 1, 'Чайники', 1),
-(4, 2124, 'Сковородки', 2);
-
 -- --------------------------------------------------------
 
 --
@@ -62,14 +52,6 @@ CREATE TABLE IF NOT EXISTS `a_ price` (
   KEY `product_id` (`product_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
 
---
--- Дамп данных таблицы `a_ price`
---
-
-INSERT INTO `a_ price` (`id`, `product_id`, `type_price`, `price`) VALUES
-(1, 1, 'sale', 150),
-(2, 2, '', 400);
-
 -- --------------------------------------------------------
 
 --
@@ -81,27 +63,8 @@ CREATE TABLE IF NOT EXISTS `a_product` (
   `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `code` int(10) UNSIGNED NOT NULL,
   `name` varchar(70) NOT NULL,
-  `category_id` int(10) UNSIGNED NOT NULL DEFAULT '1',
-  PRIMARY KEY (`id`),
-  KEY `category_id` (`category_id`)
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8;
-
---
--- Дамп данных таблицы `a_product`
---
-
-INSERT INTO `a_product` (`id`, `code`, `name`, `category_id`) VALUES
-(1, 1, 'чайник', 3),
-(2, 2, 'сковородка', 4),
-(3, 1, 'чайник', 3),
-(4, 1, 'чайник', 3),
-(5, 2, 'сковорода', 4),
-(6, 1, 'чайник', 3),
-(7, 2, 'сковорода', 4),
-(8, 3, 'утюг', 1),
-(9, 4, 'тарелка', 2),
-(10, 3, 'утюг', 1),
-(11, 4, 'тарелка', 2);
 
 -- --------------------------------------------------------
 
@@ -118,14 +81,21 @@ CREATE TABLE IF NOT EXISTS `a_property` (
   KEY `product_id` (`product_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
 
+-- --------------------------------------------------------
+
 --
--- Дамп данных таблицы `a_property`
+-- Структура таблицы `product_category`
 --
 
-INSERT INTO `a_property` (`id`, `product_id`, `property`) VALUES
-(1, 1, 'Цвет черный'),
-(2, 2, 'Цвет синий'),
-(3, 3, 'Цвет белый');
+DROP TABLE IF EXISTS `product_category`;
+CREATE TABLE IF NOT EXISTS `product_category` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `product_id` int(10) UNSIGNED NOT NULL,
+  `category_id` int(10) UNSIGNED NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `product_id` (`product_id`),
+  KEY `category_id` (`category_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 --
 -- Ограничения внешнего ключа сохраненных таблиц
@@ -138,16 +108,17 @@ ALTER TABLE `a_ price`
   ADD CONSTRAINT `a_ price_ibfk_1` FOREIGN KEY (`product_id`) REFERENCES `a_product` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Ограничения внешнего ключа таблицы `a_product`
---
-ALTER TABLE `a_product`
-  ADD CONSTRAINT `a_product_ibfk_1` FOREIGN KEY (`category_id`) REFERENCES `a_category` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
-
---
 -- Ограничения внешнего ключа таблицы `a_property`
 --
 ALTER TABLE `a_property`
   ADD CONSTRAINT `a_property_ibfk_1` FOREIGN KEY (`product_id`) REFERENCES `a_product` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Ограничения внешнего ключа таблицы `product_category`
+--
+ALTER TABLE `product_category`
+  ADD CONSTRAINT `product_category_ibfk_1` FOREIGN KEY (`product_id`) REFERENCES `a_product` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `product_category_ibfk_2` FOREIGN KEY (`category_id`) REFERENCES `a_category` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
