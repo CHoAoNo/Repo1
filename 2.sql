@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Хост: 127.0.0.1:3306
--- Время создания: Ноя 11 2020 г., 13:50
+-- Время создания: Ноя 12 2020 г., 00:06
 -- Версия сервера: 5.7.32
 -- Версия PHP: 7.4.9
 
@@ -24,30 +24,30 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Структура таблицы `product_category`
+-- Структура таблицы `a_product`
 --
 
-DROP TABLE IF EXISTS `product_category`;
-CREATE TABLE IF NOT EXISTS `product_category` (
+DROP TABLE IF EXISTS `a_product`;
+CREATE TABLE IF NOT EXISTS `a_product` (
   `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `product_id` int(10) UNSIGNED NOT NULL,
-  `category_id` int(10) UNSIGNED NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `product_id` (`product_id`),
-  KEY `category_id` (`category_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8;
+  `code` int(10) UNSIGNED NOT NULL,
+  `name` varchar(70) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8;
 
 --
--- Дамп данных таблицы `product_category`
+-- Дамп данных таблицы `a_product`
 --
 
-INSERT INTO `product_category` (`id`, `product_id`, `category_id`) VALUES
-(1, 1, 1),
-(2, 2, 1),
-(3, 3, 2),
-(4, 3, 3),
-(5, 4, 2),
-(6, 4, 3);
+INSERT INTO `a_product` (`id`, `code`, `name`) VALUES
+(1, 201, 'Бумага А4'),
+(2, 202, 'Бумага А3'),
+(3, 302, 'Принтер Canon'),
+(4, 305, 'Принтер HP'),
+(5, 201, 'Товар5'),
+(6, 202, 'Товар6'),
+(7, 302, 'Товар7'),
+(8, 305, 'Товар8');
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

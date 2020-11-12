@@ -24,7 +24,7 @@ function importXml($a) {
 		//Подготовленные SQL-запросы к БД, $stmt для получения категории по имени
 		$stmt_product = $db->prepare('INSERT INTO a_product (code, name) VALUES (?, ?) ');
 		$stmt_price = $db->prepare('INSERT INTO a_price (product_id, type_price, price) VALUES (?, ?, ?) ');
-		$stmt_property = $db->prepare('INSERT INTO a_property (product_id, property) VALUES (?, ?) ');
+		$stmt_property = $db->prepare('INSERT INTO a_property (product_id, property, property_val, unit) VALUES (?, ?, ?, ?) ');
 		$stmt_category = $db->prepare('INSERT INTO a_category (name) VALUES (?) ');
 		$stmt_product_category = $db->prepare('INSERT INTO product_category (product_id, category_id) VALUES (?, ?) ');
 		$stmt = $db->prepare('SELECT * FROM a_category WHERE name=? ');
@@ -67,8 +67,8 @@ function importXml($a) {
 					$sxi_prop = $sxi_atr->getChildren();
 					$sxi_prop->rewind();
 					while ($sxi_prop->valid()) {
-						$stmt_property->execute(array($product_id, $sxi_prop->key() . " " .
-							$sxi_prop->current() . $sxi_prop->current()['ЕдИзм']));
+						$stmt_property->execute(array($product_id, $sxi_prop->key(),
+							$sxi_prop->current(), $sxi_prop->current()['ЕдИзм']));
 
 						$sxi_prop->next();
 					}
@@ -111,7 +111,8 @@ function importXml($a) {
 		}
 
 		print "Вся информация успешно импортирована в БД";
-	} catch (PDOException $e) {
+	} 
+	catch (PDOException $e) {
 		print "Не получилось внести информацию в БД";
 	}
 }
