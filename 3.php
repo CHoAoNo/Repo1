@@ -8,18 +8,22 @@ class newBase
     /**
      * @param string $name
      */
-    function __construct(int $name = 0)
+    // тип аргумента name string
+    function __construct(string $name="")
     {
         if (empty($name)) {
-            while (array_search(self::$count, self::$arSetName) != false) {
+            // 	вместо array_search правильно in_array
+            while (in_array(self::$count, self::$arSetName) != false) {
                 ++self::$count;
             }
-            $name = self::$count;
+            // тип name string, поэтому преобразование к string
+            $name = (string)self::$count;
         }
         $this->name = $name;
         self::$arSetName[] = $this->name;
     }
-    private $name;
+    // это поле наследуется, вместо private -> protected
+    protected $name;
     /**
      * @return string
      */
@@ -41,7 +45,8 @@ class newBase
     public function getSize()
     {
         $size = strlen(serialize($this->value));
-        return strlen($size) + $size;
+        // strlen($size) не за чем прибавлять
+        return $size;
     }
     public function __sleep()
     {
@@ -52,8 +57,10 @@ class newBase
      */
     public function getSave(): string
     {
-        $value = serialize($value);
-        return $this->name . ':' . sizeof($value) . ':' . $value;
+        // вместо $value  $this->value
+        $value = serialize($this->value);
+        // вместо sizeof() -> strlen()
+        return $this->name . ':' . strlen($value) . ':' . $value;
     }
     /**
      * @return newBase
@@ -61,9 +68,14 @@ class newBase
     static public function load(string $value): newBase
     {
         $arValue = explode(':', $value);
-        return (new newBase($arValue[0]))
-            ->setValue(unserialize(substr($value, strlen($arValue[0]) + 1
-                + strlen($arValue[1]) + 1), $arValue[1]));
+
+        // разбито на части для лучшего понимания,
+        // к тому же в таком виде это работает
+        $res = new newBase($arValue[0]);
+        $val = unserialize(substr($value, (strlen($arValue[0]) + 1 + strlen($arValue[1]) + 1) ) );
+        $res->setValue($val);
+
+        return $res;
     }
 }
 class newView extends newBase
@@ -87,7 +99,9 @@ class newView extends newBase
     }
     private function setType()
     {
-        $this->type = gettype($this->value);
+        // gettype это встроенная функция php
+        // переименована в myGetType
+        $this->type = myGetType($this->value);
     }
     private function setSize()
     {
@@ -146,31 +160,37 @@ class newView extends newBase
      */
     public function getSave(): string
     {
-        if ($this->type == 'test') {
-            $this->value = $this->value->getSave();
-        }
+        // удален блок if
         return parent::getSave() . serialize($this->property);
     }
     /**
      * @return newView
      */
-    static public function load(string $value): newBase
+    //тпи возвращаемого значения заменен с newBase на newView
+    static public function load(string $value): newView
     {
         $arValue = explode(':', $value);
-        return (new newBase($arValue[0]))
-            ->setValue(unserialize(substr($value, strlen($arValue[0]) + 1
-                + strlen($arValue[1]) + 1), $arValue[1]))
-            ->setProperty(unserialize(substr($value, strlen($arValue[0]) + 1
-                + strlen($arValue[1]) + 1 + $arValue[1])))
-            ;
+
+       // разбито на части для лучшего понимания,
+       // к тому же в таком виде это работает
+       $res = new newView($arValue[0]);
+       $val = unserialize(substr($value, (strlen($arValue[0]) + 1 + strlen($arValue[1]) + 1), $arValue[1]) );
+       $res->setValue($val);
+       $prop = unserialize(substr($value, (strlen($arValue[0]) + 1 + strlen($arValue[1]) + 1 + $arValue[1]) ) );
+       $res->setProperty($prop);
+
+        return $res;
     }
 }
-function gettype($value): string
-{
+// gettype это встроенная функция php
+// переименована в myGetType
+function myGetType($value): string
+{ 
     if (is_object($value)) {
         $type = get_class($value);
         do {
-            if (strpos($type, "Test3\newBase") !== false) {
+            // вместо двойных кавычек одинарные
+            if (strpos($type, 'Test3\newBase') !== false) {
                 return 'test';
             }
         } while ($type = get_parent_class($type));
