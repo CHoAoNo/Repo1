@@ -11,7 +11,7 @@ function convertString($a, $b) {
 	$counter = 1;
 	// поиск по регулярному выражению и замена с использованием callback-функции
 	// при счетчике равном 2 сделать замену
-	$a = preg_replace_callback("/". $b . "/", function ($m) use (&$counter, $rb) {
+	$a = preg_replace_callback("/$b/", function ($m) use (&$counter, $rb) {
 
 		if ($counter++ == 2) {
 			return $rb;
@@ -25,8 +25,8 @@ function convertString($a, $b) {
 }
 
 //тест
-//$a = "abc dfg abc7 qwerty zxc 1abc8 fgh";
-//$b = "abc";
+//$a = "abc dfgh abc7 qwerty zxc 1abc8 fgh";
+//$b = "fgh";
 //echo convertString($a, $b);
 
 

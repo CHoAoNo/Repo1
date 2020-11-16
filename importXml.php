@@ -3,33 +3,32 @@
 // Реализовать функцию importXml($a). 
 // $a – путь к xml файлу (структура файла приведена ниже). 
 // Результат ее выполнения: прочитать файл $a и импортировать его в созданную БД.
-
-
 // подключение к базе данных 
 try {
 	$db = new PDO('mysql:host=localhost;dbname=test_samson;charset=UTF8', 'root', '');
 
 	// установить исключения при ошибках в базе данных 
 	$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} 
-catch (PDOException $е) {
+} catch (PDOException $е) {
 	print "Ошибка соединения: " . $e->getMessage();
 	exit();
 }
 
 function importXml($a) {
-	
+
 	global $db;
 	try {
-		//Подготовленные SQL-запросы к БД, $stmt для получения категории по имени
+		// Подготовленные SQL-запросы на вставку в БД, 
+		// $stmt_get_cat для получения категории по имени (для проверки на дублирование)
+		// $stmt_get_product для получения товара по коду (для проверки на дублирование)
 		$stmt_product = $db->prepare('INSERT INTO a_product (code, name) VALUES (?, ?) ');
 		$stmt_price = $db->prepare('INSERT INTO a_price (product_id, type_price, price) VALUES (?, ?, ?) ');
 		$stmt_property = $db->prepare('INSERT INTO a_property (product_id, property, property_val, unit) VALUES (?, ?, ?, ?) ');
 		$stmt_category = $db->prepare('INSERT INTO a_category (name) VALUES (?) ');
 		$stmt_product_category = $db->prepare('INSERT INTO product_category (product_id, category_id) VALUES (?, ?) ');
-		$stmt = $db->prepare('SELECT * FROM a_category WHERE name=? ');
-	} 
-	catch (PDOException $е) {
+		$stmt_get_cat = $db->prepare('SELECT * FROM a_category WHERE name=? ');
+		$stmt_get_product = $db->prepare('SELECT EXISTS(SELECT id FROM a_product WHERE code=?)');
+	} catch (PDOException $е) {
 		print "Ошибка: " . $e->getMessage();
 		exit();
 	}
@@ -43,76 +42,84 @@ function importXml($a) {
 	// потом перебираются атрибуты товара: 1-2 это цена, 3 это свойства, 4 это разделы
 	try {
 		while ($sxi->valid()) {
-			// импорт кода и названия товара и получение id
-			$stmt_product->execute(array($sxi->current()['Код'], $sxi->current()['Название']));
-			$product_id = $db->lastInsertId();
 
-			// итератор атрибутов товара
-			$sxi_atr = $sxi->getChildren();
-			$sxi_atr->rewind();
+			// получение из БД товара с кодом как рассматриваемый товар в XML
+			$stmt_get_product->execute(array($sxi->current()['Код']));
+			$flag = $stmt_get_product->fetch(PDO::FETCH_NUM);
 
-			// счетчик указывающий к чему относятся текущие атрибуты
-			$count = 1;
+			// если товара с таким кодом в БД ещё нет, то продолжить импорт, иначе пропустить 
+			if (!$flag[0]) {
 
-			//перебор атрибутов товара (цена, цена, свойства, категории)
-			while ($sxi_atr->valid()) {
+				// импорт кода и названия товара и получение id
+				$stmt_product->execute(array($sxi->current()['Код'], $sxi->current()['Название']));
+				$product_id = $db->lastInsertId();
 
-				// импорт цены товара
-				if ($count < 3) {
-					$stmt_price->execute(array($product_id, $sxi_atr->current()['Тип'], $sxi_atr->current()));
-				}
+				// итератор атрибутов товара
+				$sxi_atr = $sxi->getChildren();
+				$sxi_atr->rewind();
 
-				// импорт свойств товара
-				if ($count == 3) {
-					$sxi_prop = $sxi_atr->getChildren();
-					$sxi_prop->rewind();
-					while ($sxi_prop->valid()) {
-						$stmt_property->execute(array($product_id, $sxi_prop->key(),
-							$sxi_prop->current(), $sxi_prop->current()['ЕдИзм']));
+				// счетчик указывающий к чему относятся текущие атрибуты
+				$count = 1;
 
-						$sxi_prop->next();
+				//перебор атрибутов товара (цена, цена, свойства, категории)
+				while ($sxi_atr->valid()) {
+
+					// импорт цены товара
+					if ($count < 3) {
+						$stmt_price->execute(array($product_id, $sxi_atr->current()['Тип'], $sxi_atr->current()));
 					}
-				}
 
-				// импорт информации о принадлежности товара к категории
-				if ($count == 4) {
-					$sxi_cat = $sxi_atr->getChildren();
-					$sxi_cat->rewind();
-					while ($sxi_cat->valid()) {
+					// импорт свойств товара
+					if ($count == 3) {
+						$sxi_prop = $sxi_atr->getChildren();
+						$sxi_prop->rewind();
+						while ($sxi_prop->valid()) {
+							$stmt_property->execute(array($product_id, $sxi_prop->key(),
+								$sxi_prop->current(), $sxi_prop->current()['ЕдИзм']));
 
-						// получение из БД категории с именем как текущая рассматриваемая в XML
-						$stmt->execute([$sxi_cat->current()]);
-						$cat = $stmt->fetch();
-
-						// если такой категории в БД ещё нет, то создать такую и запомнить id 
-						if (!$cat) {
-							$stmt_category->execute(array($sxi_cat->current()));
-							$category_id = $db->lastInsertId();
+							$sxi_prop->next();
 						}
-						// если такая категория в БД есть, то взять id этой категории
-						else {
-							$category_id = $cat['id'];
-						}
-
-						// заполнение таблицы product_category 
-						// с информацией о принадлежности товара категории
-						$stmt_product_category->execute(array($product_id, $category_id));
-						$sxi_cat->next();
 					}
-				}
 
-				// следующие атрибуты товара
-				$sxi_atr->next();
-				$count++;
+					// импорт информации о принадлежности товара к категории
+					if ($count == 4) {
+						$sxi_cat = $sxi_atr->getChildren();
+						$sxi_cat->rewind();
+						while ($sxi_cat->valid()) {
+
+							// получение из БД категории с именем как текущая рассматриваемая в XML
+							$stmt_get_cat->execute([$sxi_cat->current()]);
+							$cat = $stmt_get_cat->fetch();
+
+							// если такой категории в БД ещё нет, то создать такую и запомнить id 
+							if (!$cat) {
+								$stmt_category->execute(array($sxi_cat->current()));
+								$category_id = $db->lastInsertId();
+							}
+							// если такая категория в БД есть, то взять id этой категории
+							else {
+								$category_id = $cat['id'];
+							}
+
+							// заполнение таблицы product_category 
+							// с информацией о принадлежности товара категории
+							$stmt_product_category->execute(array($product_id, $category_id));
+							$sxi_cat->next();
+						}
+					}
+
+					// следующие атрибуты товара
+					$sxi_atr->next();
+					$count++;
+				}
+				
 			}
-
 			// следующий товар
 			$sxi->next();
 		}
 
 		print "Вся информация успешно импортирована в БД";
-	} 
-	catch (PDOException $e) {
+	} catch (PDOException $e) {
 		print "Не получилось внести информацию в БД";
 	}
 }
